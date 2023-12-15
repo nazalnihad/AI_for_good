@@ -44,3 +44,18 @@ def embed_and_store_chunks(chunks):
 
 # Embed and store chunks in vector database
 vector_db = embed_and_store_chunks(x)
+
+while True:
+    query = input("Enter your query: ")
+    query_embedding = getEmbeddings(query)
+    # Search the vector database
+    results = vector_db.similarity_search_by_vector(query_embedding,k=5)
+    # Print the results
+    for result in results:
+        print( result.page_content)
+        print("--------------------------------------------------")
+        # print("Similarity Score:", result.similarity_score)
+        print()
+    choice = input("Do you want to continue? (y/n): ")
+    if choice == "n":
+        break
