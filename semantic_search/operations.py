@@ -1,7 +1,6 @@
 from unstructured.chunking.title import chunk_by_title
 from sentence_transformers import SentenceTransformer
 from unstructured.partition.auto import partition
-import faiss
 import os
 from langchain.docstore.document import Document
 from langchain.vectorstores.faiss import FAISS
@@ -10,8 +9,8 @@ def getEmbeddings(text,model_name='all-MiniLM-L6-v2'):
     model = SentenceTransformer(model_name)
     embeddings = model.encode(text)
     return embeddings
-filename = os.path.basename("../semantic_search/msc-syllabus-2021.pdf")
-elements = partition(filename)
+path ="semantic_search\msc-syllabus-2021.pdf"
+elements = partition(path)
 
 x = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
 
@@ -28,9 +27,8 @@ def docs_to_index(docs):
    metadatax = [doc.metadata for doc in docs]  # Extract metadata from each Document
    idx = [doc.id for doc in docs]  # Extract ID from each Document
    #Stores all encoded embeddings in the vector DB
-   vectorstore_faiss = FAISS.from_embeddings([(doc.page_content, model.encode(doc.page_content)) for doc in docs], metadatas=metadatax,ids=idx, model)
+   vectorstore_faiss = FAISS.from_embeddings([(doc.page_content, model.encode(doc.page_content)) for doc in docs], model,metadatas=metadatax,ids=idx)
    return vectorstore_faiss
-
 
 # Function to embed and store chunks in vector database
 def embed_and_store_chunks(chunks,filename):
@@ -53,12 +51,12 @@ def embed_and_store_chunks(chunks,filename):
 
 
     # Create a vector store from the embedded chunks
-    # vectorstore_faiss = FAISS.from_index(index)
     vectorstore_faiss = docs_to_index(doc_chunks)
     return vectorstore_faiss
 
 # Embed and store chunks in vector database
-vector_db = embed_and_store_chunks(x)
+filename = os.path.basename(path)
+vector_db = embed_and_store_chunks(x,filename)
 
 while True:
     query = input("Enter your query: ")
