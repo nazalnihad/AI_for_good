@@ -33,7 +33,7 @@ def docs_to_index(docs):
 
 
 # Function to embed and store chunks in vector database
-def embed_and_store_chunks(chunks):
+def embed_and_store_chunks(chunks,filename):
     # Initialize the SentenceTransformer model
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -44,13 +44,16 @@ def embed_and_store_chunks(chunks):
     for i, chunk in enumerate(chunks):
         # Embed the chunk using SentenceTransformer
         chunk_embedding = model.encode(chunk.text)
+        page_number = chunk.metadata.page_number
         # Create a Document object for the chunk
-        doc = Document(page_content=chunk.text, embedding=chunk_embedding, metadata={"page": chunk.metadata, "chunk": i})
+        doc = Document(page_content=chunk.text, embedding=chunk_embedding ,metadata={"page": page_number, "chunk": i},id=i)
         doc.metadata["source"] = f"{doc.metadata['page']}-{doc.metadata['chunk']}"
-        doc.metadata["filename"] = "MSC-syllabus"
+        doc.metadata["filename"] = filename
         doc_chunks.append(doc)
 
+
     # Create a vector store from the embedded chunks
+    # vectorstore_faiss = FAISS.from_index(index)
     vectorstore_faiss = docs_to_index(doc_chunks)
     return vectorstore_faiss
 
