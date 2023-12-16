@@ -9,10 +9,17 @@ def getEmbeddings(text,model_name='all-MiniLM-L6-v2'):
     model = SentenceTransformer(model_name)
     embeddings = model.encode(text)
     return embeddings
-elements = partition("msc-syllabus-2021.pdf")
+elements = partition("D:\git\AI_for_good\semantic_search\msc-syllabus-2021.pdf")
 x = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
 
+class Document:
+  def __init__(self, page_content,embedding,  metadata,id):
+      self.page_content = page_content
+      self.embedding = embedding
+      self.metadata = metadata
+      self.id = id
 
+      
 def docs_to_index(docs):
    model = SentenceTransformer('all-MiniLM-L6-v2')
    #Stores all encoded embeddings in the vector DB
