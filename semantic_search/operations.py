@@ -19,7 +19,7 @@ class Document:
       self.id = id
 
 # Function to embed and store chunks in vector database
-def embed_and_store_chunks(folder_path,batch_size =100):
+def embed_and_store_chunks(folder_path):
     # Initialize the SentenceTransformer model
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -28,7 +28,11 @@ def embed_and_store_chunks(folder_path,batch_size =100):
     for filename in os.listdir(folder_path):
       if filename.endswith('pdf'):
         pdf_path = os.path.join(folder_path, filename)
-        elements = partition(filename=pdf_path)
+        try:
+          elements = partition(filename=pdf_path)
+        except Exception as e:
+          print(f"An error occurred when trying to partition the file: {e,filename}")
+          continue 
         chunks = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
         # Embed each chunk and create Document objects
         for i, chunk in enumerate(chunks):
@@ -40,7 +44,7 @@ def embed_and_store_chunks(folder_path,batch_size =100):
             doc.metadata["source"] = f"{doc.metadata['page']}-{doc.metadata['chunk']}"
             doc.metadata["filename"] = filename
             doc_chunks.append(doc)
-        print(filename,"extracted")
+        print(filename,"complete")
     metadatax = [doc.metadata for doc in doc_chunks]  # Extract metadata from each Document
     idx = [doc.id for doc in doc_chunks]  # Extract ID from each Document
     #Stores all encoded embeddings in the vector DB
