@@ -9,10 +9,7 @@ def getEmbeddings(text,model_name='all-MiniLM-L6-v2'):
     model = SentenceTransformer(model_name)
     embeddings = model.encode(text)
     return embeddings
-path ="semantic_search\msc-syllabus-2021.pdf"
-elements = partition(path)
-
-x = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
+path ="semantic_search"
 
 class Document:
   def __init__(self, page_content,embedding,  metadata,id):
@@ -22,23 +19,28 @@ class Document:
       self.id = id
 
 # Function to embed and store chunks in vector database
-def embed_and_store_chunks(chunks,filename,batch_size =100):
+def embed_and_store_chunks(folder_path,batch_size =100):
     # Initialize the SentenceTransformer model
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
     # Create a list to store Document objects
     doc_chunks = []
-
-    # Embed each chunk and create Document objects
-    for i, chunk in enumerate(chunks):
-        # Embed the chunk using SentenceTransformer
-        chunk_embedding = model.encode(chunk.text)
-        page_number = chunk.metadata.page_number
-        # Create a Document object for the chunk
-        doc = Document(page_content=chunk.text, embedding=chunk_embedding ,metadata={"page": page_number, "chunk": i},id=i)
-        doc.metadata["source"] = f"{doc.metadata['page']}-{doc.metadata['chunk']}"
-        doc.metadata["filename"] = filename
-        doc_chunks.append(doc)
+    for filename in os.listdir(folder_path):
+      if filename.endswith('pdf'):
+        pdf_path = os.path.join(folder_path, filename)
+        elements = partition(filename=pdf_path)
+        chunks = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
+        # Embed each chunk and create Document objects
+        for i, chunk in enumerate(chunks):
+            # Embed the chunk using SentenceTransformer
+            chunk_embedding = model.encode(chunk.text)
+            page_number = chunk.metadata.page_number
+            # Create a Document object for the chunk
+            doc = Document(page_content=chunk.text, embedding=chunk_embedding ,metadata={"page": page_number, "chunk": i},id=i)
+            doc.metadata["source"] = f"{doc.metadata['page']}-{doc.metadata['chunk']}"
+            doc.metadata["filename"] = filename
+            doc_chunks.append(doc)
+        print(filename,"extracted")
     metadatax = [doc.metadata for doc in doc_chunks]  # Extract metadata from each Document
     idx = [doc.id for doc in doc_chunks]  # Extract ID from each Document
     #Stores all encoded embeddings in the vector DB
@@ -47,8 +49,7 @@ def embed_and_store_chunks(chunks,filename,batch_size =100):
 
 
 # Embed and store chunks in vector database
-filename = os.path.basename(path)
-vector_db = embed_and_store_chunks(x,filename)
+vector_db = embed_and_store_chunks(path)
 
 while True:
     query = input("Enter your query: ")
