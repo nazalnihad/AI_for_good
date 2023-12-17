@@ -21,17 +21,8 @@ class Document:
       self.metadata = metadata
       self.id = id
 
-
-def docs_to_index(docs):
-   model = SentenceTransformer('all-MiniLM-L6-v2')
-   metadatax = [doc.metadata for doc in docs]  # Extract metadata from each Document
-   idx = [doc.id for doc in docs]  # Extract ID from each Document
-   #Stores all encoded embeddings in the vector DB
-   vectorstore_faiss = FAISS.from_embeddings([(doc.page_content, model.encode(doc.page_content)) for doc in docs], model,metadatas=metadatax,ids=idx)
-   return vectorstore_faiss
-
 # Function to embed and store chunks in vector database
-def embed_and_store_chunks(chunks,filename):
+def embed_and_store_chunks(chunks,filename,batch_size =100):
     # Initialize the SentenceTransformer model
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -48,11 +39,12 @@ def embed_and_store_chunks(chunks,filename):
         doc.metadata["source"] = f"{doc.metadata['page']}-{doc.metadata['chunk']}"
         doc.metadata["filename"] = filename
         doc_chunks.append(doc)
-
-
-    # Create a vector store from the embedded chunks
-    vectorstore_faiss = docs_to_index(doc_chunks)
+    metadatax = [doc.metadata for doc in doc_chunks]  # Extract metadata from each Document
+    idx = [doc.id for doc in doc_chunks]  # Extract ID from each Document
+    #Stores all encoded embeddings in the vector DB
+    vectorstore_faiss = FAISS.from_embeddings([(doc.page_content, model.encode(doc.page_content)) for doc in doc_chunks], model,metadatas=metadatax,ids=idx)
     return vectorstore_faiss
+
 
 # Embed and store chunks in vector database
 filename = os.path.basename(path)
