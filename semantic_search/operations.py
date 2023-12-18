@@ -55,7 +55,35 @@ def embed_and_store_chunks(folder_path):
 
 # Embed and store chunks in vector database
 vector_db = embed_and_store_chunks(path)
-
+def addPDFtoVectorDB(filepath,vector_db):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    doc_chunks = []
+    if filepath.endswith('pdf'):
+      elements = partition(filepath)
+      filename = os.path.basename(filepath)
+      try:
+        elements = partition(filepath)
+      except Exception as e:
+        print(f"An error occurred when trying to partition the file: {e,filename}")
+      chunks = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
+      for i, chunk in enumerate(chunks):
+            # Embed the chunk using SentenceTransformer
+            chunk_embedding = model.encode(chunk.text)
+            page_number = chunk.metadata.page_number
+            doc_id = f"{filename}-{i}"
+            # Create a Document object for the chunk
+            doc = Document(page_content=chunk.text, embedding=chunk_embedding ,metadata={"page": page_number},id=doc_id)
+            doc.metadata["source"] = f"{doc.metadata['page']}-{doc_id}"
+            doc.metadata["filename"] = filename
+            doc_chunks.append(doc)
+      print(filename,"complete")
+      metadatax = [doc.metadata for doc in doc_chunks]  # Extract metadata from each Document
+      idx = [doc.id for doc in doc_chunks]  # Extract ID from each Document
+      # Extract just the embeddings from each Document
+      embeddings = [model.encode(doc.page_content) for doc in doc_chunks]
+      # Add the embeddings to the vectorstore
+      vector_db.add_embeddings(list(zip([doc.page_content for doc in doc_chunks], embeddings)), metadatas=metadatax, ids=idx)
+    return vector_db
 while True:
     query = input("Enter your query: ")
     query_embedding = getEmbeddings(query)
