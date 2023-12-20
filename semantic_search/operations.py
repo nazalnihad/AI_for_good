@@ -59,7 +59,6 @@ def addPDFtoVectorDB(filepath,vector_db):
     model = SentenceTransformer('all-MiniLM-L6-v2')
     doc_chunks = []
     if filepath.endswith('pdf'):
-      elements = partition(filepath)
       filename = os.path.basename(filepath)
       try:
         elements = partition(filepath)
