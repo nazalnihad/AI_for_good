@@ -84,6 +84,14 @@ def addPDFtoVectorDB(filepath,vector_db):
       # Add the embeddings to the vectorstore
       vector_db.add_embeddings(list(zip([doc.page_content for doc in doc_chunks], embeddings)), metadatas=metadatax, ids=idx)
     return vector_db
+
+def saveVectorDB(vector_db,path):
+    vector_db.save_local(path)
+
+def loadVectorDB(path,model='all-MiniLM-L6-v2'):
+    vector_db = FAISS.load_local(path,model)
+    return vector_db
+
 while True:
     query = input("Enter your query: ")
     query_embedding = getEmbeddings(query)
