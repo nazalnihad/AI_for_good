@@ -90,6 +90,34 @@ def saveVectorDB(vector_db,path):
 def loadVectorDB(path,model='all-MiniLM-L6-v2'):
     vector_db = FAISS.load_local(path,model)
     return vector_db
+account_name = "ragvectordbcontainer"
+account_key =""
+container_name ="vecctordbcontainer1"
+
+def upload_folder_to_blob(account_name, account_key, container_name, local_folder_path, remote_folder_name):
+    # Create a connection string
+    connect_str = f'DefaultEndpointsProtocol=https;AccountName={account_name};AccountKey={account_key};EndpointSuffix=core.windows.net'
+
+    # Create a BlobServiceClient
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+
+    # Get a container client
+    container_client = blob_service_client.get_container_client(container_name)
+
+    # Iterate through local files and upload them to Azure Blob Storage
+    for root, dirs, files in os.walk(local_folder_path):
+        for file_name in files:
+            local_file_path = os.path.join(root, file_name)
+            blob_name = os.path.join(remote_folder_name, os.path.relpath(local_file_path, local_folder_path)).replace("\\", "/")
+
+            # Create a BlobClient and upload the file
+            blob_client = container_client.get_blob_client(blob_name)
+            with open(local_file_path, "rb") as data:
+                blob_client.upload_blob(data, overwrite=True)
+
+    print(f"Folder '{local_folder_path}' uploaded to Azure Blob Storage container '{container_name}/{remote_folder_name}'.")
+
+
 
 while True:
     query = input("Enter your query: ")
