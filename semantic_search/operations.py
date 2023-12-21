@@ -118,6 +118,39 @@ def upload_folder_to_blob(account_name, account_key, container_name, local_folde
     print(f"Folder '{local_folder_path}' uploaded to Azure Blob Storage container '{container_name}/{remote_folder_name}'.")
 
 
+def download_folder_from_blob(account_name, account_key, container_name, remote_folder_name, local_folder_path):
+ # Create a connection string
+ connect_str = f'DefaultEndpointsProtocol=https;AccountName={account_name};AccountKey={account_key};EndpointSuffix=core.windows.net'
+
+ # Create a BlobServiceClient
+ blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+
+ # Get a container client
+ container_client = blob_service_client.get_container_client(container_name)
+
+ # List blobs in the specified folder
+ blob_list = container_client.list_blobs(name_starts_with=remote_folder_name)
+
+ # Download each blob to the local folder
+ for blob in blob_list:
+     blob_name = blob.name
+
+     # Extract the base file name from the blob name
+     base_file_name = os.path.basename(blob_name)
+
+     local_file_path = os.path.join(local_folder_path, base_file_name)
+
+     # Create necessary directories
+     os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+     # Create a BlobClient and download the file
+     blob_client = container_client.get_blob_client(blob_name)
+     with open(local_file_path, "wb") as data:
+         data.write(blob_client.download_blob().readall())
+
+ print(f"Folder '{container_name}/{remote_folder_name}' downloaded to '{local_folder_path}'.")
+
+
 
 while True:
     query = input("Enter your query: ")
