@@ -55,15 +55,19 @@ def embed_and_store_chunks(folder_path):
 
 # Embed and store chunks in vector database
 vector_db = embed_and_store_chunks(path)
-def addPDFtoVectorDB(filepath,vector_db):
+def addPDFtoVectorDB(filepath,vectorDBpath,model='all-MiniLM-L6-v2' ):
     model = SentenceTransformer('all-MiniLM-L6-v2')
     doc_chunks = []
+    download_folder_from_blob(account_name, account_key, container_name, "faiss_index", "/content/faiss_index2")
+    vector_db = FAISS.load_local(path,model)
     if filepath.endswith('pdf'):
       filename = os.path.basename(filepath)
-      try:
-        elements = partition(filepath)
-      except Exception as e:
-        print(f"An error occurred when trying to partition the file: {e,filename}")
+      print(filename,"started")
+      elements = partition(filepath)
+      # try:
+      #   elements = partition(filepath)
+      # except Exception as e:
+      #   print(f"An error occurred when trying to partition the file: {e,filename}")
       chunks = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
       for i, chunk in enumerate(chunks):
             # Embed the chunk using SentenceTransformer
@@ -82,7 +86,7 @@ def addPDFtoVectorDB(filepath,vector_db):
       embeddings = [model.encode(doc.page_content) for doc in doc_chunks]
       # Add the embeddings to the vectorstore
       vector_db.add_embeddings(list(zip([doc.page_content for doc in doc_chunks], embeddings)), metadatas=metadatax, ids=idx)
-    return vector_db
+      upload_folder_to_blob(account_name, account_key, container_name, vectorDBpath, "faiss_index")
 
 def saveVectorDB(vector_db,path):
     vector_db.save_local(path)
@@ -149,6 +153,17 @@ def download_folder_from_blob(account_name, account_key, container_name, remote_
          data.write(blob_client.download_blob().readall())
 
  print(f"Folder '{container_name}/{remote_folder_name}' downloaded to '{local_folder_path}'.")
+
+vectorDBpath = ""
+def semanticSearch(Query,k,vectorDBpath,model='all-MiniLM-L6-v2'):
+  download_folder_from_blob(account_name, account_key, container_name, "faiss_index",vectorDBpath )
+  vector_db = FAISS.load_local(vectorDBpath,model)
+  e2 = getEmbeddings(Query)
+  results =vector_db.similarity_search_by_vector(e2,k)
+  return results
+
+results = semanticSearch("What is chick pea?",5,vectorDBpath)
+
 
 
 
