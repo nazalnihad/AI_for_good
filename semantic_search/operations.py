@@ -59,7 +59,7 @@ def addPDFtoVectorDB(filepath,vectorDBpath,model='all-MiniLM-L6-v2' ):
     model = SentenceTransformer('all-MiniLM-L6-v2')
     doc_chunks = []
     download_folder_from_blob(account_name, account_key, container_name, "faiss_index", vectorDBpath)
-    vector_db = FAISS.load_local(path,model)
+    vector_db = FAISS.load_local(vectorDBpath,model)
     if filepath.endswith('pdf'):
       filename = os.path.basename(filepath)
       print(filename,"started")
