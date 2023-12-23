@@ -14,11 +14,25 @@ from passlib.context import CryptContext
 from rank_bm25 import BM25Okapi
 from typing import List, Tuple
 import math
+from fastapi.middleware.cors import CORSMiddleware
 
-nltk.download('punkt')
-nltk.download('stopwords')
+# nltk.download('punkt')
+# nltk.download('stopwords')
 
 app = FastAPI()
+
+origins = [
+    "http://172.23.128.1:3000",  # React app
+    "http://127.0.0.1:8000",  # FastAPI server
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -48,8 +62,7 @@ async def create_user(user: User):
         raise HTTPException(status_code=400, detail="Username already exists")
     hashed_password = pwd_context.hash(user.password)
     await app.mongodb_client["ai_for_good_db"]["users"].insert_one({"username": user.username, "password": hashed_password})
-    successfull = "successfull"
-    return {"Sign Up":successfull,"username": user.username, "password": hashed_password}
+    return {"username": user.username, "password": hashed_password}
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -81,7 +94,7 @@ async def create_upload_file(file: UploadFile = File(...)):
         words = [word for sublist in words for word in sublist if word.isalnum()]
         metadata = {"filename": file.filename, "page_number": i+1}
         corpus_element = {"text": words, "metadata": metadata}
-        result = await app.mongodb_client["ai_for_good_db"]["pdf_data"].insert_one(corpus_element)
+        result = await app.mongodb_client["ai_for_good_db"]["pdf_data2"].insert_one(corpus_element)
         # Convert ObjectId to str
         corpus_element["_id"] = str(result.inserted_id)
         corpus.append(corpus_element)
@@ -104,7 +117,7 @@ async def retrieve_pdf_data(query: str):
     # Rank the documents
     ranked_docs = rank_documents(corpus, query, k1_values, b_values)
 
-    return {"ranked_docs": ranked_docs}
+    return {"ranked_docs": ranked_docs[0]}
 
 
 def tune_bm25(corpus: List[List[str]], query: str, k1_values: List[float], b_values: List[float]) -> Tuple[float, float]:
