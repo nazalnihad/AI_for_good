@@ -158,13 +158,12 @@ vectorDBpath = ""
 def semanticSearch(Query,k,vectorDBpath,model='all-MiniLM-L6-v2'):
   download_folder_from_blob(account_name, account_key, container_name, "faiss_index",vectorDBpath )
   vector_db = FAISS.load_local(vectorDBpath,model)
-  e2 = getEmbeddings(Query)
+  emb_model = SentenceTransformer(model)
+  e2 = emb_model.encode(Query)
   results =vector_db.similarity_search_by_vector(e2,k)
   return results
 
-results = semanticSearch("What is chick pea?",5,vectorDBpath)
-
-
+results = semanticSearch("Query?",5,vectorDBpath)
 
 
 while True:
