@@ -55,38 +55,40 @@ def embed_and_store_chunks(folder_path):
 
 # Embed and store chunks in vector database
 vector_db = embed_and_store_chunks(path)
+
 def addPDFtoVectorDB(filepath,vectorDBpath,model='all-MiniLM-L6-v2' ):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+    emb_model = SentenceTransformer(model).to(device)
     doc_chunks = []
     download_folder_from_blob(account_name, account_key, container_name, "faiss_index", vectorDBpath)
     vector_db = FAISS.load_local(vectorDBpath,model)
     if filepath.endswith('pdf'):
       filename = os.path.basename(filepath)
       print(filename,"started")
-      elements = partition(filepath)
-      # try:
-      #   elements = partition(filepath)
-      # except Exception as e:
-      #   print(f"An error occurred when trying to partition the file: {e,filename}")
-      chunks = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
-      for i, chunk in enumerate(chunks):
-            # Embed the chunk using SentenceTransformer
-            chunk_embedding = model.encode(chunk.text)
-            page_number = chunk.metadata.page_number
-            doc_id = f"{filename}-{i}"
-            # Create a Document object for the chunk
-            doc = Document(page_content=chunk.text, embedding=chunk_embedding ,metadata={"page": page_number},id=doc_id)
-            doc.metadata["source"] = f"{doc.metadata['page']}-{doc_id}"
-            doc.metadata["filename"] = filename
-            doc_chunks.append(doc)
-      print(filename,"complete")
-      metadatax = [doc.metadata for doc in doc_chunks]  # Extract metadata from each Document
-      idx = [doc.id for doc in doc_chunks]  # Extract ID from each Document
-      # Extract just the embeddings from each Document
-      embeddings = [model.encode(doc.page_content) for doc in doc_chunks]
-      # Add the embeddings to the vectorstore
-      vector_db.add_embeddings(list(zip([doc.page_content for doc in doc_chunks], embeddings)), metadatas=metadatax, ids=idx)
-      upload_folder_to_blob(account_name, account_key, container_name, vectorDBpath, "faiss_index")
+      try:
+        elements = partition(filepath)
+        chunks = chunk_by_title(elements, new_after_n_chars=1500, combine_text_under_n_chars=700)
+        for i, chunk in enumerate(chunks):
+              # Embed the chunk using SentenceTransformer
+              chunk_embedding = emb_model.encode(chunk.text)
+              page_number = chunk.metadata.page_number
+              doc_id = f"{filename}-{i}"
+              # Create a Document object for the chunk
+              doc = Document(page_content=chunk.text, embedding=chunk_embedding ,metadata={"page": page_number},id=doc_id)
+              doc.metadata["source"] = f"{doc.metadata['page']}-{doc_id}"
+              doc.metadata["filename"] = filename
+              doc_chunks.append(doc)
+        print(filename,"complete")
+        metadatax = [doc.metadata for doc in doc_chunks]  # Extract metadata from each Document
+        idx = [doc.id for doc in doc_chunks]  # Extract ID from each Document
+        # Extract just the embeddings from each Document
+        embeddings = [emb_model.encode(doc.page_content) for doc in doc_chunks]
+        # Add the embeddings to the vectorstore
+        vector_db.add_embeddings(list(zip([doc.page_content for doc in doc_chunks], embeddings)), metadatas=metadatax, ids=idx)
+        saveVectorDB(vector_db,vectorDBpath)
+        upload_folder_to_blob(account_name, account_key, container_name, vectorDBpath, "faiss_index")
+      except Exception as e:
+        print(f"An error occurred when trying to partition the file: {e,filename}")
+
 
 def saveVectorDB(vector_db,path):
     vector_db.save_local(path)
