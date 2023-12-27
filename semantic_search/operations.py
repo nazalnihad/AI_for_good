@@ -157,13 +157,16 @@ def download_folder_from_blob(account_name, account_key, container_name, remote_
  print(f"Folder '{container_name}/{remote_folder_name}' downloaded to '{local_folder_path}'.")
 
 vectorDBpath = ""
-def semanticSearch(Query,k,vectorDBpath,model='all-MiniLM-L6-v2'):
-  download_folder_from_blob(account_name, account_key, container_name, "faiss_index",vectorDBpath )
-  vector_db = FAISS.load_local(vectorDBpath,model)
-  emb_model = SentenceTransformer(model)
-  e2 = emb_model.encode(Query)
-  results =vector_db.similarity_search_by_vector(e2,k)
-  return results
+def semanticSearch(Query, k, vectorDBpath, model='all-MiniLM-L6-v2'):
+    download_folder_from_blob(account_name, account_key, container_name, "faiss_index", vectorDBpath)
+    vector_db = FAISS.load_local(vectorDBpath, model)
+    emb_model = SentenceTransformer(model)
+    e2 = emb_model.encode(Query)
+    results = vector_db.similarity_search_by_vector(e2, k)
+    
+    # Extract 'source' from metadata and return it
+    source_list = [result.metadata.get('source', '') for result in results]
+    return source_list
 
 results = semanticSearch("Query?",5,vectorDBpath)
 

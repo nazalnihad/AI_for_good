@@ -121,13 +121,16 @@ def addPDFtoVectorDB(filepath,vectorDBpath,model='all-MiniLM-L6-v2' ):
       except Exception as e:
         print(f"An error occurred when trying to partition the file: {e,filename}")
 
-def semanticSearch(Query,k,vectorDBpath,model='all-MiniLM-L6-v2'):
-  download_folder_from_blob(account_name, account_key, container_name, "faiss_index",vectorDBpath )
-  vector_db = FAISS.load_local(vectorDBpath,model)
-  emb_model = SentenceTransformer(model)
-  e2 = emb_model.encode(Query)
-  results =vector_db.similarity_search_by_vector(e2,k)
-  return results
+def semanticSearch(Query, k, vectorDBpath, model='all-MiniLM-L6-v2'):
+    download_folder_from_blob(account_name, account_key, container_name, "faiss_index", vectorDBpath)
+    vector_db = FAISS.load_local(vectorDBpath, model)
+    emb_model = SentenceTransformer(model)
+    e2 = emb_model.encode(Query)
+    results = vector_db.similarity_search_by_vector(e2, k)
+    
+    # Extract 'source' from metadata and return it
+    source_list = [result.metadata.get('source', '') for result in results]
+    return source_list
 
 text = "What is KNN?"
 results = semanticSearch(text,5,vectorDBpath)
